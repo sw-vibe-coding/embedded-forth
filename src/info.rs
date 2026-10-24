@@ -22,15 +22,13 @@ pub(crate) fn help(long: bool) {
 }
 
 pub(crate) fn version(long: bool) {
-    println!("embedded-forth {}", env!("CARGO_PKG_VERSION"));
     if long {
+        println!("{}", proto_forth_wasm::build_version());
         println!(
             "Copyright (c) 2026 Michael A. Wright\nLicense: MIT\n\
-            Repository: https://github.com/sw-vibe-coding/embedded-forth\n\
-            Build host: {}\nBuild commit: {}\nBuild time: {}",
-            env!("FORTH_BUILD_HOST"),
-            env!("FORTH_BUILD_COMMIT"),
-            env!("FORTH_BUILD_TIME")
+            Repository: https://github.com/sw-vibe-coding/embedded-forth"
         );
+    } else {
+        println!("embedded-forth {}", env!("CARGO_PKG_VERSION"));
     }
 }

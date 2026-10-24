@@ -23,6 +23,11 @@ def check(destination, port, source, expected):
 def main():
     destination = sys.argv[1] if len(sys.argv) > 1 else "arduino@localhost"
     port = sys.argv[2] if len(sys.argv) > 2 else "2222"
+    version = check(destination, port, "VERSION\n:quit\n", "\n")
+    for field in ["embedded-forth", "Build host:", "Build commit:", "Build time:"]:
+        if field not in version:
+            raise SystemExit(f"Missing version field {field}: {version}")
+    print(f"PASS VERSION word\n{version}", end="")
     check(destination, port, "2 3 + .\n: SQUARE\nDUP * ;\n9 SQUARE .\n:quit\n", "81 \n")
     print("PASS arithmetic and multiline definitions")
     check(destination, port, "MENU\n1\n10 FIB .\n:quit\n", "55 \n")

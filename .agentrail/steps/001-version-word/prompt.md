@@ -1,0 +1,1 @@
+Test-first: add a dictionary-resident VERSION word ( -- ) showing package version, build host, UTC build date/time and Git SHA, valid interactively and in colon definitions. Reuse build metadata for CLI --version. Respect the saved-state schema and checklist regression limits. Run the gate, commit, deploy and test on the Uno Q, and complete the saga with evidence.

@@ -1,4 +1,6 @@
+mod build_info;
 mod native;
+pub use build_info::build_version;
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -8,15 +10,16 @@ use wasm_bindgen::prelude::*;
 /// Bumped whenever the saved-state schema changes (new OpKind / Word /
 /// PrimitiveId variants, renamed fields, etc.). Older snapshots are
 /// rejected at load time and the user is steered back to a fresh boot.
-const STATE_VERSION: u32 = 3;
+const STATE_VERSION: u32 = 4;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 enum Value {
     Int(i32),
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 enum PrimitiveId {
+    Version,
     Dup,
     Swap,
     Drop,
@@ -595,77 +598,7 @@ impl Machine {
     }
 
     fn install_primitives(&mut self) {
-        let entries: &[(&str, PrimitiveId)] = &[
-            ("DUP", PrimitiveId::Dup),
-            ("SWAP", PrimitiveId::Swap),
-            ("DROP", PrimitiveId::Drop),
-            ("OVER", PrimitiveId::Over),
-            ("ROT", PrimitiveId::Rot),
-            ("+", PrimitiveId::Add),
-            ("-", PrimitiveId::Sub),
-            ("*", PrimitiveId::Mul),
-            ("/", PrimitiveId::Div),
-            ("MOD", PrimitiveId::Mod),
-            ("/MOD", PrimitiveId::SlashMod),
-            ("*/MOD", PrimitiveId::StarSlashMod),
-            ("=", PrimitiveId::Eq),
-            ("<", PrimitiveId::Lt),
-            (">", PrimitiveId::Gt),
-            ("AND", PrimitiveId::And),
-            ("OR", PrimitiveId::Or),
-            ("XOR", PrimitiveId::Xor),
-            ("INVERT", PrimitiveId::Invert),
-            ("LSHIFT", PrimitiveId::LShift),
-            ("RSHIFT", PrimitiveId::RShift),
-            ("COMPILE,", PrimitiveId::CompileComma),
-            ("IF", PrimitiveId::If),
-            ("ELSE", PrimitiveId::Else),
-            ("THEN", PrimitiveId::Then),
-            ("BEGIN", PrimitiveId::Begin),
-            ("UNTIL", PrimitiveId::Until),
-            ("WHILE", PrimitiveId::While),
-            ("REPEAT", PrimitiveId::Repeat),
-            ("DO", PrimitiveId::Do),
-            ("LOOP", PrimitiveId::LoopPrim),
-            ("+LOOP", PrimitiveId::PlusLoop),
-            ("LEAVE", PrimitiveId::LeavePrim),
-            ("[", PrimitiveId::LBracket),
-            ("]", PrimitiveId::RBracket),
-            ("LITERAL", PrimitiveId::Literal),
-            ("DOES>", PrimitiveId::DoesArrow),
-            ("POSTPONE", PrimitiveId::Postpone),
-            (".", PrimitiveId::Dot),
-            (".S", PrimitiveId::DotS),
-            ("CLEAR", PrimitiveId::Clear),
-            (">R", PrimitiveId::ToR),
-            ("R>", PrimitiveId::FromR),
-            ("R@", PrimitiveId::RFetch),
-            ("@", PrimitiveId::Fetch),
-            ("!", PrimitiveId::Store),
-            ("+!", PrimitiveId::PlusStore),
-            ("WORDS", PrimitiveId::Words),
-            ("CR", PrimitiveId::Cr),
-            ("EMIT", PrimitiveId::Emit),
-            ("SPACE", PrimitiveId::Space),
-            ("I", PrimitiveId::I),
-            ("J", PrimitiveId::J),
-            ("ALLOT", PrimitiveId::Allot),
-            ("EXECUTE", PrimitiveId::Execute),
-            ("HERE", PrimitiveId::Here),
-            (",", PrimitiveId::Comma),
-            ("LATEST", PrimitiveId::Latest),
-            ("IMMEDIATE", PrimitiveId::Immediate),
-            ("CREATE", PrimitiveId::Create),
-            ("TYPE", PrimitiveId::Type),
-            ("ABORT", PrimitiveId::Abort),
-            ("EXIT", PrimitiveId::Exit),
-            ("?DO", PrimitiveId::QDo),
-            ("PICK", PrimitiveId::Pick),
-            ("ROLL", PrimitiveId::Roll),
-            ("DEPTH", PrimitiveId::Depth),
-            ("RDEPTH", PrimitiveId::RDepth),
-        ];
-        for (name, id) in entries {
+        for (name, id, _) in native::PRIMITIVES {
             self.define_word((*name).to_string(), Word::Primitive(*id));
         }
         // Compile-mode helpers — IMMEDIATE in standard Forth, except `]`
@@ -1371,75 +1304,8 @@ impl Machine {
     }
 
     fn execute_primitive(&mut self, prim: PrimitiveId) {
-        match prim {
-            PrimitiveId::Dup => self.prim_dup(),
-            PrimitiveId::Swap => self.prim_swap(),
-            PrimitiveId::Drop => self.prim_drop(),
-            PrimitiveId::Over => self.prim_over(),
-            PrimitiveId::Rot => self.prim_rot(),
-            PrimitiveId::Add => self.prim_add(),
-            PrimitiveId::Sub => self.prim_sub(),
-            PrimitiveId::Mul => self.prim_mul(),
-            PrimitiveId::Div => self.prim_div(),
-            PrimitiveId::Mod => self.prim_mod(),
-            PrimitiveId::SlashMod => self.prim_slash_mod(),
-            PrimitiveId::StarSlashMod => self.prim_star_slash_mod(),
-            PrimitiveId::Eq => self.prim_eq(),
-            PrimitiveId::Lt => self.prim_lt(),
-            PrimitiveId::Gt => self.prim_gt(),
-            PrimitiveId::And => self.prim_and(),
-            PrimitiveId::Or => self.prim_or(),
-            PrimitiveId::Xor => self.prim_xor(),
-            PrimitiveId::Invert => self.prim_invert(),
-            PrimitiveId::LShift => self.prim_lshift(),
-            PrimitiveId::RShift => self.prim_rshift(),
-            PrimitiveId::CompileComma => self.prim_compile_comma(),
-            PrimitiveId::If => self.prim_if(),
-            PrimitiveId::Else => self.prim_else(),
-            PrimitiveId::Then => self.prim_then(),
-            PrimitiveId::Begin => self.prim_begin(),
-            PrimitiveId::Until => self.prim_until(),
-            PrimitiveId::While => self.prim_while(),
-            PrimitiveId::Repeat => self.prim_repeat(),
-            PrimitiveId::Do => self.prim_do(),
-            PrimitiveId::LoopPrim => self.prim_loop(),
-            PrimitiveId::PlusLoop => self.prim_plus_loop(),
-            PrimitiveId::LeavePrim => self.prim_leave(),
-            PrimitiveId::LBracket => self.prim_l_bracket(),
-            PrimitiveId::RBracket => self.prim_r_bracket(),
-            PrimitiveId::Literal => self.prim_literal(),
-            PrimitiveId::DoesArrow => self.prim_does_arrow(),
-            PrimitiveId::Postpone => self.prim_postpone(),
-            PrimitiveId::Type => self.prim_type(),
-            PrimitiveId::Abort => self.do_abort(),
-            PrimitiveId::Exit => self.exiting = true,
-            PrimitiveId::QDo => self.prim_q_do(),
-            PrimitiveId::Pick => self.prim_pick(),
-            PrimitiveId::Roll => self.prim_roll(),
-            PrimitiveId::Depth => self.stack.push(Value::Int(self.stack.len() as i32)),
-            PrimitiveId::RDepth => self.stack.push(Value::Int(self.return_stack.len() as i32)),
-            PrimitiveId::Dot => self.prim_dot(),
-            PrimitiveId::DotS => self.prim_dot_s(),
-            PrimitiveId::Clear => self.prim_clear(),
-            PrimitiveId::ToR => self.prim_to_r(),
-            PrimitiveId::FromR => self.prim_r_from(),
-            PrimitiveId::RFetch => self.prim_r_fetch(),
-            PrimitiveId::Fetch => self.prim_fetch(),
-            PrimitiveId::Store => self.prim_store(),
-            PrimitiveId::PlusStore => self.prim_plus_store(),
-            PrimitiveId::Words => self.prim_words(),
-            PrimitiveId::Cr => self.prim_cr(),
-            PrimitiveId::Emit => self.prim_emit(),
-            PrimitiveId::Space => self.prim_space(),
-            PrimitiveId::I => self.prim_i(),
-            PrimitiveId::J => self.prim_j(),
-            PrimitiveId::Allot => self.prim_allot(),
-            PrimitiveId::Execute => self.prim_execute(),
-            PrimitiveId::Here => self.prim_here(),
-            PrimitiveId::Comma => self.prim_comma(),
-            PrimitiveId::Latest => self.prim_latest(),
-            PrimitiveId::Immediate => self.prim_immediate(),
-            PrimitiveId::Create => self.prim_create(),
+        if let Some((_, _, execute)) = native::PRIMITIVES.iter().find(|(_, id, _)| *id == prim) {
+            execute(self);
         }
     }
 

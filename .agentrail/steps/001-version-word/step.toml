@@ -1,0 +1,9 @@
+number = 1
+slug = "version-word"
+status = "completed"
+description = "Test-first: add a dictionary-resident VERSION word ( -- ) showing package ver..."
+role = "production"
+context_files = []
+created_at = "2026-10-24T10:47:33"
+completed_at = "2026-10-24T10:49:37"
+commits = ["4597cd96be90444120aedd5f783b7651f4bc149a"]
