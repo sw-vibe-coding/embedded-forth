@@ -1,0 +1,16 @@
+{
+  "source_commit": "6c2869dd78b81153e6cf3411b5ebd6611045259b",
+  "measurement": "Original src/lib.rs formatted with rustfmt --edition 2024; only pre-existing size violations are grandfathered.",
+  "limits": {
+    "[FAIL] Function LOC [proto-forth-wasm]: 'run_tokens' in lib.rs": 106,
+    "[FAIL] Function LOC [proto-forth-wasm]: 'install_primitives' in lib.rs": 87,
+    "[FAIL] Function LOC [proto-forth-wasm]: 'do_dispatch' in lib.rs": 95,
+    "[FAIL] Function LOC [proto-forth-wasm]: 'handle_consumer' in lib.rs": 56,
+    "[FAIL] Function LOC [proto-forth-wasm]: 'dispatch_compile' in lib.rs": 106,
+    "[FAIL] Function LOC [proto-forth-wasm]: 'handle_see' in lib.rs": 62,
+    "[FAIL] Function LOC [proto-forth-wasm]: 'exec_op_vm' in lib.rs": 232,
+    "[FAIL] Function LOC [proto-forth-wasm]: 'execute_primitive' in lib.rs": 72,
+    "[FAIL] File LOC [proto-forth-wasm]: lib.rs": 2300,
+    "[FAIL] Module Function Count [proto-forth-wasm]: Module lib.rs": 102
+  }
+}

@@ -1,6 +1,71 @@
-# proto-forth-wasm
+# Embedded Forth
 
 Minimal plain HTML + JS + Rust/WASM prototype for a proto-Forth workbench.
+
+The same engine also runs as a native Linux terminal REPL, with baked-in
+Fibonacci, factorial, and FizzBuzz demos. No browser is needed for the CLI.
+
+## Terminal REPL
+
+```bash
+cargo build --release --no-default-features
+./target/release/embedded-forth
+```
+
+Type `MENU`, select `1`, `2`, or `3`, and the selected demo loads and runs.
+Its definitions stay in the session: try `10 FIB .` after Fibonacci or
+`6 FACT .` after factorial. The demos are baked into the binary, so a board
+needs only the executable. Their sources are in `demos/*.fth`.
+
+`MENU` is a terminal command entered on its own line. Other terminal
+commands are `:stack`, `:reset`, and `:quit`; Ctrl-D also exits. Forth
+definitions can span REPL lines. Use files for multiline comments and
+strings, since the REPL evaluates each line separately.
+
+You can also run source files or expressions:
+
+```bash
+./target/release/embedded-forth demos/fib.fth
+./target/release/embedded-forth -e '2 3 + .'
+printf ': SQUARE DUP * ;\n9 SQUARE .\n' | ./target/release/embedded-forth -
+```
+
+Forth cells are signed 32-bit integers. Factorial inputs must stay within
+0 through 12 to fit. VM diagnostics retain the browser engine's behavior:
+they print on stdout; CLI exit status reports argument and host I/O errors.
+
+## Arduino Uno Q
+
+The attached board runs aarch64 Debian Linux and is reached through the
+existing SSH tunnel at `arduino@localhost`, port `2222`. The CLI runs on
+the Linux processor.
+
+On the build host, install the Rust ARM64 Linux target and provide the
+`aarch64-linux-gnu-gcc` cross-compiler, then deploy:
+
+```bash
+rustup target add aarch64-unknown-linux-gnu
+./scripts/deploy-uno-q.sh
+python3 scripts/smoke-uno-q.py
+ssh -t -p 2222 arduino@localhost ./embedded-forth/embedded-forth
+```
+
+Type `MENU` at the `forth>` prompt. The board needs no Rust installation
+and no separate demo files. The executable lives at
+`/home/arduino/embedded-forth/embedded-forth`.
+
+Both scripts accept an optional SSH destination and port, for example
+`./scripts/deploy-uno-q.sh arduino@board.local 22`. Keep the SSH tunnel
+running when using the default destination.
+
+For development, read [AGENTS.md](AGENTS.md) and use `agentrail next` and
+`agentrail begin`. Run `scripts/gate.sh` before committing.
+
+The gate runs formatting, clippy, tests, native and WASM builds, spelling,
+Markdown validation, and sw-checklist. The inherited engine has ten
+checklist size failures. `scripts/checklist-baseline.json` records their
+original limits and source commit; the gate prints all failures and rejects
+any new or enlarged failure. A passing gate does not mean a clean checklist.
 
 **Live demo:** <https://sw-vibe-coding.github.io/sw-fth-wasm/>
 
@@ -57,8 +122,8 @@ The same WASM module can grow more Forth-owned behavior (self-hosting-oriented c
 
 ## Related Repositories
 
-- [sw-cor24-forth](https://github.com/sw-embed/sw-cor24-forth) — sibling DTC Forth targeting the COR24 24-bit RISC ISA
-- [sw-cor24-project](https://github.com/sw-embed/sw-cor24-project) — COR24 ecosystem hub
+- [sw-cor24-forth](https://github.com/sw-embed/sw-cor24-forth) - sibling DTC Forth targeting the COR24 24-bit RISC ISA
+- [sw-cor24-project](https://github.com/sw-embed/sw-cor24-project) - COR24 ecosystem hub
 
 ## Links
 

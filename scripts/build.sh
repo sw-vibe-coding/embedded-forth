@@ -21,7 +21,7 @@ if ! command -v wasm-bindgen >/dev/null 2>&1; then
 fi
 
 echo "Building Rust library for wasm32-unknown-unknown..."
-cargo build --target wasm32-unknown-unknown --release
+cargo build --lib --target wasm32-unknown-unknown --release
 
 echo "Generating browser bindings with wasm-bindgen..."
 mkdir -p web/pkg

@@ -1,5 +1,8 @@
-use std::collections::{HashMap, HashSet};
+mod native;
+
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
+#[cfg(all(feature = "wasm", target_arch = "wasm32"))]
 use wasm_bindgen::prelude::*;
 
 /// Bumped whenever the saved-state schema changes (new OpKind / Word /
@@ -147,7 +150,7 @@ struct Frame {
     return_label: Option<String>,
 }
 
-#[wasm_bindgen]
+#[cfg_attr(all(feature = "wasm", target_arch = "wasm32"), wasm_bindgen)]
 pub struct Machine {
     stack: Vec<Value>,
     return_stack: Vec<Value>,
@@ -169,9 +172,12 @@ pub struct Machine {
     exiting: bool,
 }
 
-#[wasm_bindgen]
+#[cfg_attr(all(feature = "wasm", target_arch = "wasm32"), wasm_bindgen)]
 impl Machine {
-    #[wasm_bindgen(constructor)]
+    #[cfg_attr(
+        all(feature = "wasm", target_arch = "wasm32"),
+        wasm_bindgen(constructor)
+    )]
     pub fn new() -> Machine {
         let mut m = Machine {
             stack: Vec::new(),
@@ -341,8 +347,7 @@ impl Machine {
                 true
             }
             Err(e) => {
-                self.output
-                    .push(format!("State restore failed: {}", e));
+                self.output.push(format!("State restore failed: {}", e));
                 false
             }
         }
@@ -425,8 +430,7 @@ impl Machine {
                 if i < chars.len() {
                     i += 1; // skip closing "
                 } else {
-                    self.output
-                        .push(".\": missing closing quote".to_string());
+                    self.output.push(".\": missing closing quote".to_string());
                 }
                 self.handle_print_string(s);
                 continue;
@@ -463,8 +467,7 @@ impl Machine {
                 if i < chars.len() {
                     i += 1; // skip closing "
                 } else {
-                    self.output
-                        .push("S\": missing closing quote".to_string());
+                    self.output.push("S\": missing closing quote".to_string());
                 }
                 self.handle_s_string(s);
                 continue;
@@ -478,7 +481,7 @@ impl Machine {
     }
 
     fn handle_print_string(&mut self, s: String) {
-        if self.compiling.is_some() {
+        if let Some(p) = self.compiling.as_mut() {
             // Compile `." text"` as `S" text" TYPE`: deposit the chars at
             // HERE, emit SLiteral(addr, count), then a TYPE call. Same
             // runtime effect as a hand-written `S" text" TYPE`, no
@@ -488,7 +491,6 @@ impl Machine {
                 self.memory.push(Value::Int(c as i32));
             }
             let count = s.chars().count() as i32;
-            let p = self.compiling.as_mut().unwrap();
             p.body.push(Op {
                 label: format!(".\" {}\"", s),
                 kind: OpKind::SLiteral { addr, count },
@@ -518,9 +520,8 @@ impl Machine {
     }
 
     fn handle_abort_string(&mut self, s: String) {
-        if self.compiling.is_some() {
+        if let Some(p) = self.compiling.as_mut() {
             let label = format!("ABORT\" {}\"", s);
-            let p = self.compiling.as_mut().unwrap();
             p.body.push(Op {
                 label,
                 kind: OpKind::AbortStr(s),
@@ -543,9 +544,8 @@ impl Machine {
             self.memory.push(Value::Int(c as i32));
         }
         let count = s.chars().count() as i32;
-        if self.compiling.is_some() {
+        if let Some(p) = self.compiling.as_mut() {
             let label = format!("S\" {}\"", s);
-            let p = self.compiling.as_mut().unwrap();
             p.body.push(Op {
                 label,
                 kind: OpKind::SLiteral { addr, count },
@@ -587,11 +587,7 @@ impl Machine {
             x /= base;
         }
         let body: String = digits.chars().rev().collect();
-        if n < 0 {
-            format!("-{}", body)
-        } else {
-            body
-        }
+        if n < 0 { format!("-{}", body) } else { body }
     }
 
     fn parse_literal(&self, token: &str) -> Option<i32> {
@@ -675,8 +671,8 @@ impl Machine {
         // Compile-mode helpers — IMMEDIATE in standard Forth, except `]`
         // which is a normal word that resumes compilation.
         for name in [
-            "IF", "ELSE", "THEN", "BEGIN", "UNTIL", "WHILE", "REPEAT", "DO", "LOOP",
-            "+LOOP", "LEAVE", "[", "LITERAL", "DOES>", "POSTPONE", "?DO",
+            "IF", "ELSE", "THEN", "BEGIN", "UNTIL", "WHILE", "REPEAT", "DO", "LOOP", "+LOOP",
+            "LEAVE", "[", "LITERAL", "DOES>", "POSTPONE", "?DO",
         ] {
             self.immediate_words.insert(name.to_string());
         }
@@ -792,7 +788,10 @@ impl Machine {
             Some(Word::Constant(v)) => {
                 self.stack.push(Value::Int(v));
             }
-            Some(Word::Created { data_addr, does_ops }) => {
+            Some(Word::Created {
+                data_addr,
+                does_ops,
+            }) => {
                 self.stack.push(Value::Int(data_addr));
                 if let Some(ops) = does_ops {
                     self.run_user(&upper, ops);
@@ -824,7 +823,10 @@ impl Machine {
                 let has_does = does_ops.is_some();
                 self.define_word(
                     name.clone(),
-                    Word::Created { data_addr, does_ops },
+                    Word::Created {
+                        data_addr,
+                        does_ops,
+                    },
                 );
                 if has_does {
                     self.output.push(format!(
@@ -843,8 +845,7 @@ impl Machine {
                     return;
                 }
                 let xt = self.intern_xt(&upper);
-                if self.compiling.is_some() {
-                    let p = self.compiling.as_mut().unwrap();
+                if let Some(p) = self.compiling.as_mut() {
                     p.body.push(Op {
                         label: format!("' {}", upper),
                         kind: OpKind::PushInt(xt),
@@ -947,22 +948,25 @@ impl Machine {
         //
         // Immediate words execute inline at compile time instead of being
         // compiled into the body — the Forth way to extend the compiler.
-        if self.immediate_words.contains(upper) {
-            if let Some(word) = self.dictionary.get(upper).cloned() {
-                match word {
-                    Word::Primitive(p) => self.execute_primitive(p),
-                    Word::User(ops) => self.run_user(upper, ops),
-                    Word::Variable(addr) => self.stack.push(Value::Int(addr)),
-                    Word::Constant(v) => self.stack.push(Value::Int(v)),
-                    Word::Created { data_addr, does_ops } => {
-                        self.stack.push(Value::Int(data_addr));
-                        if let Some(ops) = does_ops {
-                            self.run_user(upper, ops);
-                        }
+        if self.immediate_words.contains(upper)
+            && let Some(word) = self.dictionary.get(upper).cloned()
+        {
+            match word {
+                Word::Primitive(p) => self.execute_primitive(p),
+                Word::User(ops) => self.run_user(upper, ops),
+                Word::Variable(addr) => self.stack.push(Value::Int(addr)),
+                Word::Constant(v) => self.stack.push(Value::Int(v)),
+                Word::Created {
+                    data_addr,
+                    does_ops,
+                } => {
+                    self.stack.push(Value::Int(data_addr));
+                    if let Some(ops) = does_ops {
+                        self.run_user(upper, ops);
                     }
                 }
-                return;
             }
+            return;
         }
 
         let op = self.compile_token(token, upper);
@@ -1006,7 +1010,10 @@ impl Machine {
                 self.output
                     .push(format!("SEE {}: constant = {}{}", upper, v, immediate_tag));
             }
-            Some(Word::Created { data_addr, does_ops }) => match does_ops {
+            Some(Word::Created {
+                data_addr,
+                does_ops,
+            }) => match does_ops {
                 Some(ops) => {
                     let body = ops
                         .iter()
@@ -1033,8 +1040,7 @@ impl Machine {
         let idx_do = match self.compiling.as_mut().unwrap().cf_stack.pop() {
             Some(i) => i,
             None => {
-                self.output
-                    .push(format!("compile: {} without DO", label));
+                self.output.push(format!("compile: {} without DO", label));
                 return;
             }
         };
@@ -1122,10 +1128,10 @@ impl Machine {
             }
             if self.exiting {
                 self.exiting = false;
-                if let Some(popped) = frames.pop() {
-                    if let Some(label) = popped.return_label {
-                        self.emit_trace(&label);
-                    }
+                if let Some(popped) = frames.pop()
+                    && let Some(label) = popped.return_label
+                {
+                    self.emit_trace(&label);
                 }
             }
         }
@@ -1161,7 +1167,10 @@ impl Machine {
                     self.stack.push(Value::Int(v));
                     self.emit_trace(&op.label);
                 }
-                Some(Word::Created { data_addr, does_ops }) => {
+                Some(Word::Created {
+                    data_addr,
+                    does_ops,
+                }) => {
                     self.stack.push(Value::Int(data_addr));
                     self.emit_trace(&op.label);
                     if let Some(inner) = does_ops {
@@ -1257,7 +1266,8 @@ impl Machine {
                 };
                 let len = self.return_stack.len();
                 if len < 2 {
-                    self.output.push("+LOOP: return stack underflow".to_string());
+                    self.output
+                        .push("+LOOP: return stack underflow".to_string());
                     self.emit_trace(&op.label);
                     return;
                 }
@@ -1321,7 +1331,10 @@ impl Machine {
                             Word::User(ops) => self.run_user(name, ops),
                             Word::Variable(addr) => self.stack.push(Value::Int(addr)),
                             Word::Constant(v) => self.stack.push(Value::Int(v)),
-                            Word::Created { data_addr, does_ops } => {
+                            Word::Created {
+                                data_addr,
+                                does_ops,
+                            } => {
                                 self.stack.push(Value::Int(data_addr));
                                 if let Some(inner) = does_ops {
                                     self.run_user(name, inner);
@@ -1403,12 +1416,8 @@ impl Machine {
             PrimitiveId::QDo => self.prim_q_do(),
             PrimitiveId::Pick => self.prim_pick(),
             PrimitiveId::Roll => self.prim_roll(),
-            PrimitiveId::Depth => self
-                .stack
-                .push(Value::Int(self.stack.len() as i32)),
-            PrimitiveId::RDepth => self
-                .stack
-                .push(Value::Int(self.return_stack.len() as i32)),
+            PrimitiveId::Depth => self.stack.push(Value::Int(self.stack.len() as i32)),
+            PrimitiveId::RDepth => self.stack.push(Value::Int(self.return_stack.len() as i32)),
             PrimitiveId::Dot => self.prim_dot(),
             PrimitiveId::DotS => self.prim_dot_s(),
             PrimitiveId::Clear => self.prim_clear(),
@@ -1738,8 +1747,7 @@ impl Machine {
         let name = match &self.latest {
             Some(n) => n.clone(),
             None => {
-                self.output
-                    .push("LATEST: no words defined".to_string());
+                self.output.push("LATEST: no words defined".to_string());
                 return;
             }
         };
@@ -1753,9 +1761,7 @@ impl Machine {
                 let name = name.clone();
                 self.immediate_words.insert(name);
             }
-            None => self
-                .output
-                .push("IMMEDIATE: no words defined".to_string()),
+            None => self.output.push("IMMEDIATE: no words defined".to_string()),
         }
     }
 
@@ -1783,7 +1789,10 @@ impl Machine {
             Some(Word::User(ops)) => self.run_user(&name, ops),
             Some(Word::Variable(addr)) => self.stack.push(Value::Int(addr)),
             Some(Word::Constant(v)) => self.stack.push(Value::Int(v)),
-            Some(Word::Created { data_addr, does_ops }) => {
+            Some(Word::Created {
+                data_addr,
+                does_ops,
+            }) => {
                 self.stack.push(Value::Int(data_addr));
                 if let Some(ops) = does_ops {
                     self.run_user(&name, ops);
@@ -1807,9 +1816,7 @@ impl Machine {
                     self.memory.len()
                 ));
             }
-            Some(n) => self
-                .output
-                .push(format!("ALLOT: negative count {}", n)),
+            Some(n) => self.output.push(format!("ALLOT: negative count {}", n)),
             None => self.output.push("ALLOT: stack empty".to_string()),
         }
     }
@@ -2230,9 +2237,7 @@ impl Machine {
     fn prim_postpone(&mut self) {
         match self.compiling.as_mut() {
             Some(p) => p.pending_postpone = true,
-            None => self
-                .output
-                .push("POSTPONE: not compiling".to_string()),
+            None => self.output.push("POSTPONE: not compiling".to_string()),
         }
     }
 
@@ -2243,7 +2248,11 @@ impl Machine {
             (Some(a), Some(c)) if a >= 0 && c >= 0 => {
                 let start = a as usize;
                 let n = c as usize;
-                if start.checked_add(n).map(|end| end > self.memory.len()).unwrap_or(true) {
+                if start
+                    .checked_add(n)
+                    .map(|end| end > self.memory.len())
+                    .unwrap_or(true)
+                {
                     self.output.push(format!(
                         "TYPE: range out of bounds (addr {} count {})",
                         a, c
@@ -2280,15 +2289,11 @@ impl Machine {
                 kind: OpKind::CallByName(name),
             });
         } else {
-            self.output
-                .push("COMPILE,: not compiling".to_string());
+            self.output.push("COMPILE,: not compiling".to_string());
         }
     }
 
     fn pop_int(&mut self) -> Option<i32> {
-        match self.stack.pop() {
-            Some(Value::Int(n)) => Some(n),
-            None => None,
-        }
+        self.stack.pop().map(|Value::Int(n)| n)
     }
 }

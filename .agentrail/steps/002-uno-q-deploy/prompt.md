@@ -1,0 +1,1 @@
+Identify the user-provided SSH destination and inspect board architecture and runtime. Build and copy a compatible native binary without replacing unrelated files, verify REPL and MENU demos on the Uno Q, document exact commands and results. Run the gate, commit code and saga metadata, then complete the saga.
