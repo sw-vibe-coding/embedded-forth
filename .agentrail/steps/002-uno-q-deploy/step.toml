@@ -1,8 +1,9 @@
 number = 2
 slug = "uno-q-deploy"
-status = "in-progress"
+status = "completed"
 description = "Identify the user-provided SSH destination and inspect board architecture and..."
 role = "production"
 context_files = []
 created_at = "2026-10-24T09:18:43"
-commits = []
+completed_at = "2026-10-24T10:27:43"
+commits = ["236f9c640d904153b03de3e0f540245cb0988449"]
