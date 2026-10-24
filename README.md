@@ -22,6 +22,13 @@ commands are `:stack`, `:reset`, and `:quit`; Ctrl-D also exits. Forth
 definitions can span REPL lines. Use files for multiline comments and
 strings, since the REPL evaluates each line separately.
 
+The Forth word `VERSION` prints the version, build host, UTC build date/time,
+and Git commit SHA. It leaves the stack unchanged and works inside colon
+definitions too, for example `: ABOUT VERSION ; ABOUT`. This metadata
+identifies the executable's build, including when it runs on another host.
+Snapshots from before this word was added use an older state schema and
+must be recreated.
+
 You can also run source files or expressions:
 
 ```bash
@@ -63,7 +70,8 @@ For development, read [AGENTS.md](AGENTS.md) and use `agentrail next` and
 
 The gate runs formatting, clippy, tests, native and WASM builds, spelling,
 Markdown validation, and sw-checklist. The inherited engine has ten
-checklist size failures. `scripts/checklist-baseline.json` records their
+checklist size failures in the initial port (eight remain after consolidating
+the primitive catalog). `scripts/checklist-baseline.json` records their
 original limits and source commit; the gate prints all failures and rejects
 any new or enlarged failure. A passing gate does not mean a clean checklist.
 
