@@ -1,0 +1,1 @@
+Port the shared Forth engine to a native Linux REPL for Arduino Uno Q. Provide MENU with baked-in Fibonacci, factorial and FizzBuzz demos. Adopt the X_eTaL saga and quality-gate process, refactor inherited code to pass sw-checklist, preserve WASM, and validate on the attached board over SSH.

@@ -1,0 +1,8 @@
+number = 1
+slug = "native-repl-gate"
+status = "in-progress"
+description = "Finish the native REPL and baked-in MENU demos. Establish the X_eTaL workflow..."
+role = "production"
+context_files = []
+created_at = "2026-10-24T09:18:43"
+commits = []

@@ -1,0 +1,8 @@
+number = 2
+slug = "uno-q-deploy"
+status = "pending"
+description = "Identify the user-provided SSH destination and inspect board architecture and..."
+role = "production"
+context_files = []
+created_at = "2026-10-24T09:18:43"
+commits = []

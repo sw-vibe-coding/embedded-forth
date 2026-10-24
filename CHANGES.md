@@ -72,7 +72,7 @@
   `+LOOP` patches the skip target to the position past the loop end so
   empty-range cases are a single jump. STATE_VERSION bumped to 3
 - `PICK ( ... n -- ... item-n )` and `ROLL ( ... n -- ... )` —
-  generalised stack manipulation. `0 PICK` is `DUP`, `1 PICK` is `OVER`;
+  generalized stack manipulation. `0 PICK` is `DUP`, `1 PICK` is `OVER`;
   `1 ROLL` is `SWAP`, `2 ROLL` is `ROT`. Both bounds-check `n` against
   current stack depth and reject negatives
 - `EXIT`: early-return primitive. Sets `Machine.exiting`; the `run_user`
@@ -98,8 +98,8 @@
   characters to `output_line`. SEE labels are `S" <text>"` so the body
   decompiles legibly. Bootstrap gains a `GREETING` demo using S" + TYPE
 - `."` is now compiled as `S" text" TYPE` under the hood — `OpKind::PrintStr`
-  is removed in favour of the existing `SLiteral` + `CallPrim(Type)` pair.
-  Behaviour is unchanged for users; SEE shows the same `." text"` label.
+  is removed in favor of the existing `SLiteral` + `CallPrim(Type)` pair.
+  Behavior is unchanged for users; SEE shows the same `." text"` label.
   STATE_VERSION bumped to 2 so any saved state from before this refactor
   is rejected and the bootstrap takes over
 - `."` (string-print): in compile mode emits `OpKind::PrintStr(String)` that
@@ -197,7 +197,7 @@
   one-cell allocator. `LATEST` pushes the xt of the most-recently
   defined word — primitives count, so a fresh machine yields the xt
   of `LATEST` itself; defining a colon word, variable, or constant
-  updates it. New `define_word` helper centralises dictionary inserts
+  updates it. New `define_word` helper centralizes dictionary inserts
   and the `latest` field update; primitives, `;`-finalize, `VARIABLE`,
   and `CONSTANT` all flow through it
 
