@@ -1,6 +1,6 @@
 number = 2
 slug = "uno-q-deploy"
-status = "pending"
+status = "in-progress"
 description = "Identify the user-provided SSH destination and inspect board architecture and..."
 role = "production"
 context_files = []

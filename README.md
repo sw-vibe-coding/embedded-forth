@@ -34,6 +34,30 @@ Forth cells are signed 32-bit integers. Factorial inputs must stay within
 0 through 12 to fit. VM diagnostics retain the browser engine's behavior:
 they print on stdout; CLI exit status reports argument and host I/O errors.
 
+## Arduino Uno Q
+
+The attached board runs aarch64 Debian Linux and is reached through the
+existing SSH tunnel at `arduino@localhost`, port `2222`. The CLI runs on
+the Linux processor.
+
+On the build host, install the Rust ARM64 Linux target and provide the
+`aarch64-linux-gnu-gcc` cross-compiler, then deploy:
+
+```bash
+rustup target add aarch64-unknown-linux-gnu
+./scripts/deploy-uno-q.sh
+python3 scripts/smoke-uno-q.py
+ssh -t -p 2222 arduino@localhost ./embedded-forth/embedded-forth
+```
+
+Type `MENU` at the `forth>` prompt. The board needs no Rust installation
+and no separate demo files. The executable lives at
+`/home/arduino/embedded-forth/embedded-forth`.
+
+Both scripts accept an optional SSH destination and port, for example
+`./scripts/deploy-uno-q.sh arduino@board.local 22`. Keep the SSH tunnel
+running when using the default destination.
+
 For development, read [AGENTS.md](AGENTS.md) and use `agentrail next` and
 `agentrail begin`. Run `scripts/gate.sh` before committing.
 
